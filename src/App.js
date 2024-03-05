@@ -1,69 +1,99 @@
-import React, { lazy, Suspense } from 'react';
-import { useState, Component } from 'react';
-import { useEffect } from 'react';
-import ReactDOM from 'react-dom/client';
+import React, { lazy, Suspense, useEffect, useState } from "react";
+import ReactDOM from "react-dom/client";
+import Header from "./components/Header";
+import Body from "./components/Body";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import About from "./components/About";
+import Contact from "./components/Contact";
+import Error from "./components/Error";
+import RestaurantMenu from "./components/RestaurantMenu";
+import Footer from "./components/Footer";
+import { Provider } from "react-redux";
+import appStore from "./utils/appStore";
+import Cart from "./components/Cart";
+import { Toaster } from "react-hot-toast";
+import LocationContext from "./utils/LocationContext";
+import CityContext from "./utils/CityContext";
+// import Grocery from "./components/Grocery";
 
-import Header from './components/Header';
-import Body from './components/Body';
-// import Footer from './components/Footer';
-import About from './components/About';
-import Contact from './components/Contact';
-import Error from './components/Error';
-import RestaurantMenu from './components/RestaurantMenu';
-import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
-import UserContext from './utils/UserContext';
-import { Provider } from 'react-redux';
-import appStore from './utils/appStore';
-import Cart from './components/Cart';
-import Footer from './components/Footer';
-
-
-const Grocery = lazy(() => import('./components/Grocery'));
+const Grocery = lazy(() => import("./components/Grocery"));
 
 const AppLayout = () => {
-  const [userName, setUserName] = useState();
+  //Location Context ----------------------------
+  const [location, setLocation] = useState({
+    latitude: 12.9716,
+    longitude: 77.5946,
+  });
 
-  // Authentication
+  const [city, setCity] = useState("Bangalore");
+
   useEffect(() => {
-    // Make an API call and send username and password
-    const data = {
-      name: 'Dip',
+    const successCallback = (position) => {
+      const { latitude, longitude } = position?.coords;
+      console.log(latitude, longitude);
+      setLocation({
+        latitude: latitude,
+        longitude: longitude,
+      });
     };
-    setUserName(data.name);
+    const errorCallback = (error) => {
+      console.log(error);
+    };
+    navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
   }, []);
+
+  //----------------------------
 
   return (
     <Provider store={appStore}>
-      <UserContext.Provider value={{ loggedInUser: userName, setUserName }}>
-        <div className="app">
-          <Header />
-          <Outlet />
-          <Footer/>
-        </div>
-      </UserContext.Provider>
+      <div className="app">
+        <LocationContext.Provider
+          value={{ location: location, setLocation: setLocation }}
+        >
+          <CityContext.Provider value={{ city: city, setCity: setCity }}>
+            <Toaster
+              position="top-center"
+              reverseOrder={false}
+              gutter={30}
+              containerClassName="notification-container"
+              toastOptions={{
+                className: "notification-toast",
+                duration: 1500,
+              }}
+            />
+            <Header />
+            <Outlet />
+            <Footer />
+          </CityContext.Provider>
+        </LocationContext.Provider>
+      </div>
     </Provider>
   );
 };
 
 const appRouter = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <AppLayout />,
     children: [
       {
-        path: '/',
+        path: "/",
         element: <Body />,
       },
       {
-        path: '/about',
+        path: "/about",
         element: <About />,
       },
       {
-        path: '/contact',
+        path: "/contact",
         element: <Contact />,
       },
       {
-        path: '/grocery',
+        path: "/restaurants/:resId",
+        element: <RestaurantMenu />,
+      },
+      {
+        path: "/grocery",
         element: (
           <Suspense fallback={<h1>Loading...</h1>}>
             <Grocery />
@@ -71,11 +101,7 @@ const appRouter = createBrowserRouter([
         ),
       },
       {
-        path: '/restaurants/:resId',
-        element: <RestaurantMenu />,
-      },
-      {
-        path: '/cart',
+        path: "/cart",
         element: <Cart />,
       },
     ],
@@ -83,6 +109,6 @@ const appRouter = createBrowserRouter([
   },
 ]);
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(<RouterProvider router={appRouter} />);
