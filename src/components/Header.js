@@ -1,73 +1,144 @@
-import { useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
-import useOnlineStatus from '../utils/useOnlineStatus';
-import UserContext from '../utils/UserContext';
-import { useSelector } from 'react-redux';
+import { useContext, useState } from "react";
+import { Link } from "react-router-dom";
+import useOnlineStatus from "../utils/useOnlineStatus";
+import { useSelector } from "react-redux";
+import toast from "react-hot-toast";
+import LocationContext from "../utils/LocationContext";
+import CityContext from "../utils/CityContext";
 
 const Header = () => {
-  const [btnNameReact, setBtnNameReact] = useState('Login');
-
+  const [btnName, setBtnName] = useState("Login");
+  const [showNavItems, setShowNavItems] = useState(false);
+  const [isLogin, setIsLogin] = useState(false);
   const onlineStatus = useOnlineStatus();
+  const [nearMe, setNearMe] = useState(false);
+  const { setLocation } = useContext(LocationContext);
+  const { city } = useContext(CityContext);
 
-  const { loggedInUser } = useContext(UserContext);
-
-  // * Subscribing to the store using a Selector
   const cartItems = useSelector((store) => store.cart.items);
 
+  const handleLocationNearMe = () => {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const { latitude, longitude } = position?.coords;
+      setLocation({
+        latitude: latitude,
+        longitude: longitude,
+      });
+      setNearMe(true);
+    });
+  };
+
+  const handleLocationDefault = () => {
+    setLocation({
+      latitude: 12.9716,
+      longitude: 77.5946,
+    });
+    setNearMe(false);
+  };
+
+  const totalQuantity = cartItems.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+
+  const toggleNavItems = () => {
+    setShowNavItems(!showNavItems);
+  };
 
   return (
-    <header className="flex justify-between bg-pink-200 sm:bg-yellow-200 lg:bg-black text-white font-[500] shadow-md">
-      <div className="logo-container">
-        <Link to="/">
-          <img
-            src="https://cdn-icons-png.flaticon.com/128/3655/3655682.png"
-            alt="Logo"
-            className="w-16 mx-6 mt-2"
-          />
-        </Link>
+    <>
+      <div className="header">
+        <div className="logo-container">
+          <Link to={"/"}>
+            <img
+              alt="logo"
+              className="logo"
+              src={require("../../logos/logo.png")}
+            />
+          </Link>
+          {nearMe ? (
+            <div
+              onClick={() => {
+                handleLocationDefault();
+                toast.success("Switched to Default Location Bangalore");
+              }}
+            >
+              <Link to={"/"}>
+                <button>Default Location</button>
+              </Link>
+              <p>{city}</p>
+            </div>
+          ) : (
+            <div
+              onClick={() => {
+                handleLocationNearMe();
+                toast.success(`Switched to Nearby Location`);
+              }}
+            >
+              <Link to={"/"}>
+                <button>📍Locate Me</button>
+              </Link>
+              <p>{city}</p>
+            </div>
+          )}
+        </div>
+        <div className="nav-items">
+          <div className="menu-icon" onClick={toggleNavItems}>
+            <span>
+              <i className="fa-solid fa-bars"></i>
+            </span>
+          </div>
+          <ul className={`nav-list ${showNavItems ? "show" : ""}`}>
+            <li>
+              {" "}
+              <Link className="h-item" to={"/"}>
+                {" "}
+                <span>
+                  <i className="fa-solid fa-house"></i>
+                </span>{" "}
+                Home
+              </Link>{" "}
+            </li>
+            <li>
+              <Link className="h-item" to={"/about"}>
+                <span>
+                  <i className="fa-brands fa-react"></i>
+                </span>{" "}
+                About
+              </Link>
+            </li>
+            {/* <li><Link className="h-item" to={"/contact"}><span><i class="fa-solid fa-address-book"></i></span> Contact</Link></li> */}
+            {/* <li><Link to={"/grocery"}>Grocery</Link></li> */}
+            <li>
+              <Link className="h-item h-cart" to={"/cart"}>
+                <span>
+                  <i className="fa-solid fa-cart-shopping"></i>
+                </span>{" "}
+                Cart<p>{totalQuantity}</p>
+              </Link>
+            </li>
+
+            <div
+              onClick={() => {
+                btnName === "Login"
+                  ? (setBtnName("Logout"), toast.success("User Logged In"))
+                  : (setBtnName("Login"), toast.success("User Logged Out"));
+              }}
+              className="login"
+            >
+              <span>
+                <i className="fa-solid fa-user"></i>
+              </span>
+              {btnName}
+            </div>
+            <li className="h-online">
+              Online Status: {onlineStatus ? "🟢" : "🔴"}
+            </li>
+          </ul>
+        </div>
       </div>
-      <div className="flex items-center ">
-        <ul className="flex p-4 m-4">
-          <li className="px-4">Online Status: {onlineStatus ? '✅' : '⛔'}</li>
-          <li className="px-4 hover:text-green-500 duration-[.3s]">
-            <Link to="/">Home</Link>
-          </li>
-          <li className="px-4 hover:text-green-500 duration-[.3s]">
-            <Link to="/about">About Us</Link>
-          </li>
-          <li className="px-4 hover:text-green-500 duration-[.3s]">
-            <Link to="/contact">Contact</Link>
-          </li>
-          <li className="px-4 hover:text-green-500 duration-[.3s]">
-            <Link to="/grocery">Grocery</Link>
-          </li>
-          <li className="px-4 hover:text-green-500 duration-[.3s]">
-            <Link to="/cart">
-              🛒 (
-              {cartItems.length === 1
-                ? `${cartItems.length} item`
-                : `${cartItems.length} items`}
-              )
-            </Link>
-          </li>
-          <button
-            className="px-4 hover:text-green-500 duration-[.3s]"
-            onClick={() => {
-              //   btnName = 'Logout';
-              btnNameReact === 'Login'
-                ? setBtnNameReact('Logout')
-                : setBtnNameReact('Login');
-              console.log(btnNameReact);
-            }}
-          >
-            {btnNameReact}
-          </button>
-          <li className="px-4 font-bold">
-            <Link className="links">{loggedInUser}</Link>
-          </li>
-        </ul>
-      </div>
-    </header>
+      <div className="empty"></div>
+    </>
   );
 };
 
