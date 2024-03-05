@@ -1,35 +1,73 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 const cartSlice = createSlice({
-  name: 'cart',
+  name: "cart",
   initialState: {
     items: [],
+    restaurant: null,
   },
   reducers: {
     addItem: (state, action) => {
-      // * Vanilla (Older) Redux - DON'T MUTATE STATE, returning was mandotory
-      /*
-      const newState = [ ...state ];
-      newState.items.push(action.payload)
-      return newState
-      */
+      if (state.restaurant === null) {
+        state.restaurant = action.payload.resInfo;
+        state.items.push({...action.payload.item, quantity: 1});
+      } else if (state.restaurant.id != action.payload.resInfo.id) {
+        state.restaurant = action.payload.resInfo;
+        state.items = [{...action.payload.item, quantity: 1}];
+      } else {
+        state.items.push({...action.payload.item, quantity: 1});
+      }
+    },
+    // removeItem: (state, action) => {
+    //   const indexToRemove = action.payload;
 
-      // * Redux Toolkit - We should have to mutate the state, returning is not mandotory
-      // * RTK uses Immer.js behind the scenes
-      state.items.push(action.payload);
-    },
-    removeItem: (state) => {
-      state.items.pop();
-    },
+    //   if (indexToRemove >= 0 && indexToRemove < state.items.length) {
+    //     state.items.splice(indexToRemove, 1);
+    //   }
+    //   if(state.items.length == 0) {
+    //     state.restaurant = null;
+    //   }
+    // },
     clearCart: (state) => {
-      // * RTK - either Mutate existing the state or return the new State
-      // state.items.length = 0; // state = []
-
-      return { items: [] };
+      state.items.length = 0;
+      state.restaurant = null;
     },
+
+    // Increment the quantity of a specific item
+    incrementQuantity: (state, action) => {
+      const indexToIncrement = action.payload;
+      if(indexToIncrement >= 0 && indexToIncrement < state.items.length) {
+        state.items[indexToIncrement].quantity += 1;
+      }
+    },
+
+    // Decrement the quantity of a specific item
+    decrementQuantity: (state,action) => {
+      const indexToDecrement = action.payload;
+      if (
+        indexToDecrement >= 0 &&
+        indexToDecrement < state.items.length
+      ) {
+        if (state.items[indexToDecrement].quantity > 1) {
+          state.items[indexToDecrement].quantity -= 1;
+        } else {
+          // If quantity is 1, remove the item
+          state.items.splice(indexToDecrement, 1);
+        }
+      }
+    },
+
+    //Action to update quantity when adding an item
+    // updateQuantity: (state, action) => {
+    //   const {index, quantity} = action.payload;
+    //   if(index >=0 && index < state.items.length) {
+    //     state.items[index].quantity = quantity;
+    //   }
+    // }
   },
 });
 
-export const { addItem, removeItem, clearCart } = cartSlice.actions;
+export const { addItem, removeItem, clearCart, incrementQuantity, decrementQuantity} =
+  cartSlice.actions;
 
 export default cartSlice.reducer;
